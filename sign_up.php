@@ -24,27 +24,26 @@ $json = file_get_contents("php://input");
 // jsonを解凍している
 $signupData = json_decode($json, true);
 
+// jsonをデコードした配列からデータを取り出し
 $name = $signupData['sign_up_user_params']['name'];
 $bio = $signupData['sign_up_user_params']['bio'];
 $email = $signupData['sign_up_user_params']['email'];
 $password = $signupData['sign_up_user_params']['password'];
 
-// sendResponse([
-//     $name, $bio, $email, $password
-// ]);
-
-
-
+// SQL操作
 $sql = "INSERT INTO users (name, bio, email, password)";
 $sql .= " VALUES (:name, :bio, :email, :password)";
 
+//準備
 $stmt = $pdo->prepare($sql);
 
+//bindprama
 $stmt->bindParam(':name', $name, PDO::PARAM_STR);
 $stmt->bindParam(':bio', $bio, PDO::PARAM_STR);
 $stmt->bindParam(':email', $email, PDO::PARAM_STR);
 $stmt->bindParam(':password', $password, PDO::PARAM_STR);
 
+//execute
 $stmt->execute();
 
 
