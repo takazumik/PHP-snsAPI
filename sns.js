@@ -24,7 +24,7 @@ let signup = () => {
     console.log(JSON.stringify(signupData));
 
 
-    fetch("http://localhost/php_api/sign_up.php", {
+    fetch("http://localhost/php_api/sign_up/", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
@@ -33,7 +33,7 @@ let signup = () => {
         })
         .then(response => response.json())
         .then(json => {
-            console.log(json)
+            console.log(json);
         })
 }
 
@@ -58,7 +58,7 @@ let signup = () => {
 //     console.log("今送ったデータ");
 //     console.log(JSON.stringify(loginData));
 
-//     fetch("https://teachapi.herokuapp.com/sign_in", {
+//     fetch("http://localhost/php_api/sign_in.php", {
 //             method: "POST",
 //             headers: {
 //                 "Content-Type": "application/json; charset=utf-8",
