@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Tvviter</title>
+</head>
+
+<body>
+
+    <h1>tvvitter</h1>
+    <form id="signup">
+        <h2>新規登録</h2>
+        <input type="text" placeholder="name" id="name">
+        <input type="text" placeholder="bio" id="bio">
+        <input type="text" placeholder="email" id="email">
+        <input type="text" placeholder="password" id="password">
+        <input type="text" placeholder="passwordConfirmation" id="passwordConfirmation">
+        <input type="button" value="新規登録" onclick="signup()">
+    </form>
+
+    <div id="login">
+        <h2>ログイン</h2>
+        <input type="text" placeholder="email" id="loginEmail">
+        <input type="text" placeholder="password" id="loginPassword">
+        <input type="text" placeholder="passwordConfirmation" id="loginPasswordConfirmation">
+        <input type="button" value="ログイン" onclick="login()">
+    </div>
+
+    <div id="users">
+        <h2>ユーザー一覧</h2>
+        <input type="text" placeholder="ページ" id="page">
+        <input type="text" placeholder="リミット" id="limit">
+        <input type="text" placeholder="クエリ" id="query">
+        <input type="button" value="ユーザー一覧" onclick="users()">
+
+        <div class="view">
+            <div id="allusers">
+            </div>
+        </div>
+    </div>
+
+    <div id="posts">
+        <h2>投稿一覧</h2>
+        <input type="text" placeholder="ページ" id="postPage">
+        <input type="text" placeholder="リミット" id="postLimit">
+        <input type="text" placeholder="クエリ" id="postQuery">
+        <input type="button" value="投稿一覧" onclick="posts()">
+
+
+        <div class="view">
+            <div id="showPost"></div>
+        </div>
+    </div>
+
+    <div id="userEdit">
+        <h2>ユーザー編集</h2>
+        <input type="text" placeholder="name" id="editName">
+        <input type="text" placeholder="bio" id="editBio">
+        <input type="text" placeholder="ID" id="user-edit-id">
+        <input type="button" value="ユーザー編集" onclick="userEdit()">
+
+        <span id="showUserEdit"></span>
+    </div>
+
+
+    <div id="userDelete">
+        <h2>ユーザー削除</h2>
+        <input type="text" placeholder="ID" id="delete-user-id">
+        <input type="button" value="削除する" id="deleteUser" onclick="userDelete()" />
+    </div>
+
+
+    <div id="timeline">
+        <h2>タイムライン</h2>
+        <input type="text" placeholder="ページ" id="timelinePage">
+        <input type="text" placeholder="リミット" id="timelineLimit">
+        <input type="text" placeholder="クエリ" id="timelineQuery">
+        <input type="text" placeholder="ID" id="timeline-id">
+        <input type="button" value="タイムライン" onclick="timeline()" />
+
+        <span id="showTimeline"></span>
+    </div>
+
+    <div id="newPost">
+        <h2>新規投稿</h2>
+        <textarea type="text" placeholder="post" id="postText"></textarea>
+        <input type="button" value="つぶやく" onclick="newPost()">
+
+        <span id="showNewpost"></span>
+    </div>
+
+    <div id="editPost">
+        <h2>投稿編集</h2>
+        <textarea type="text" placeholder="編集" id="editText"></textarea>
+        <input type="text" placeholder="投稿ID" id="post-edit-id">
+        <input type="button" value="つぶやきを編集する" onclick="editPost()">
+
+        <span id="showEditPost"></span>
+    </div>
+
+    <div id="delete">
+        <h2>削除</h2>
+        <input type="text" placeholder="ID" id="delete-id">
+        <input type="button" value="削除する" id="deleteText" onclick="deleteText()" />
+    </div>
+
+
+
+    <script src="sns.js"></script>
+</body>
+
+</html>
