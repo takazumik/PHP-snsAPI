@@ -20,10 +20,6 @@ let signup = () => {
         }
     };
 
-    console.log("今送ったデータ");
-    console.log(JSON.stringify(signupData));
-
-
     fetch("http://localhost/php_api/sign_up/", {
             method: "POST",
             headers: {
@@ -79,10 +75,9 @@ const users = () => {
     const token = localStorage.getItem('token')
 
     fetch(`http://localhost/php_api/users?page=${page}&limit=${limit}&query=${query}`, {
-            // fetch(`http://localhost/php_api/users`, {
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer 493360907edae44f43d97bf3cd2b1adf7f403f5f52b5b7d04401ab3110a95d99`
 
             },
         })
