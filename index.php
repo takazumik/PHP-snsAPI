@@ -32,8 +32,6 @@ $page = intval($minimumID01[1]);
 $limit = intval($minimumID02[1]);
 $query = $minimumID03[1];
 
-// sendResponse($ID01);
-
 //データベース接続と例外処理
 try {
     $pdo = new PDO('mysql:dbname=php_sns;host=localhost;
@@ -42,6 +40,45 @@ try {
     print('DB接続エラー:' . $e->getMessage());
 }
 
+// tokenに紐づくユーザを取得する
+function selectUsersByToken($pdo)
+{
+    $headers = getallheaders();
+    $authorization = $headers['Authorization'];
+    $tokenFromRequest = explode(' ', $authorization)[1]; // d0183...
+
+    $sql = 'SELECT * FROM users WHERE token = :token';
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':token', $tokenFromRequest, PDO::PARAM_STR);
+    $stmt->execute();
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// token check end
+// okだったら何もしない。ngだったらエラーを返却してexit
+function tokenCheck($pdo)
+{
+    $usersByToken = selectUsersByToken($pdo);
+    if (0 === count($usersByToken)) {
+        /* リクエストされたトークンが使われていない場合 */
+        // TODO:tokenが存在しないときにエラーメッセージを返す
+        sendResponse('トークンが存在しないよ');
+        exit();
+    }
+}
+
+function tokenAndIdCheck($pdo, $userId)
+{
+    $usersByToken = selectUsersByToken($pdo);
+    if (0 === count($usersByToken)) {
+        sendResponse('トークンが存在しないよ');
+    }
+    $user = $usersByToken[0];
+    if ($userId !== $user['id']) {
+        sendResponse('トークンとuserIdの組み合わせが不正です');
+    }
+}
 
 //新規登録
 if ($router[2] === 'sign_up') {
@@ -104,217 +141,227 @@ if ($router[2] === 'sign_in') {
     $stmt->bindParam(':password', $password, PDO::PARAM_STR);
 
     $stmt->execute();
+    // 値を返す
+    $sql = 'SELECT * FROM users WHERE email = :email';
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':email', $email, PDO::PARAM_STR);
+    $stmt->execute();
+    sendResponse($stmt->fetch(PDO::FETCH_ASSOC));
+}
+
+//ユーザー一覧
+if ($router[2] === 'users' && $method === 'GET') {
+    // token check start ==========================================================
+    tokenCheck($pdo);
+    // token check end ============================================================
+
+    if (!isset($query)) {
+        /* query off */
+        $sql = 'SELECT * FROM users';
+        $stmt = $pdo->prepare($sql);
+    } else {
+        /* query on */
+        $sql = 'SELECT * FROM users WHERE name LIKE :name';
+        $stmt = $pdo->prepare($sql);
+        $name = '%' . $query . '%';
+        $stmt->bindValue(':name', $name, PDO::PARAM_STR);
+    }
+    $stmt->execute();
+
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+    if ($page === 0) {
+        $page = 1;
+    }
+    if ($limit === 0) {
+        $limit = 25;
+    }
+    $a = [];
+    $start = 1 + $limit * ($page -1) -1;
+    $end =  $limit * ($page -1) + $limit -1;
+    for ($i = $start; $i <= $end && $i < count($result); $i++) {
+        $a[] = $result[$i];
+    }
+    sendResponse($a);
+}
+
+//ユーザー削除
+if ($router[2] === 'users' && $method === 'DELETE') {
+    $id = $router[3];
+    $sql = 'DELETE FROM users WHERE id = :id';
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':id', $id, PDO::PARAM_STR);
+
+    $stmt->execute();
+    sendResponse('ID:'. $id . 'を削除しました');
+}
+
+//ユーザー編集
+if ($router[2] === 'users' && $method === 'PUT') {
+    $editData = json_decode($json, true);
+    $name = $editData['user_params']['name'];
+    $bio = $editData['user_params']['bio'];
+    $id = $router[3];
+
+    tokenAndIdCheck($pdo, $id);
+
+    $user = $resultFetchAll[0];
+    $user_id = $user['id'];
+
+    $sql = 'UPDATE users SET name = :name, bio = :bio WHERE id = :id';
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+    $stmt->bindParam(':bio', $bio, PDO::PARAM_STR);
+    $stmt->bindParam(':id', $id, PDO::PARAM_STR);
+
+    $stmt->execute();
+    sendResponse('ID:'. $id . 'を編集しました');
+}
+
+//タイムライン
+if ($router[3] === 'timeline') {
+    $sql = 'SELECT * FROM users';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
     // sendResponse('タイムラインです');
     sendResponse($stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
-//ユーザー一覧
-if ($router[2] === 'users') {
-    if ($method === 'GET') {
-        // token check start ==========================================================
-        $headers = getallheaders();
-        $authorization = $headers['Authorization'];
-        $tokenFromRequest = explode(' ', $authorization)[1]; // d0183...
-
-        $sql = 'SELECT * FROM users WHERE token = :token';
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':token', $tokenFromRequest, PDO::PARAM_STR);
-        $stmt->execute();
-
-        $resultFetchAll = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $isValidToken = (1 === count($resultFetchAll)); // tokenが使われていればtrue
-
-        if (false === $isValidToken) {
-            /* リクエストされたトークンが使われていない場合 */
-            // TODO:tokenが存在しないときにエラーメッセージを返す
-            sendResponse('トークンが存在しないよ');
-            exit();
-        }
-        /* リクエストされたトークンが有効な場合 */
-        // token check end ============================================================
-
-        if (!isset($query)) {
-            /* query off */
-            $sql = 'SELECT * FROM users';
-            $stmt = $pdo->prepare($sql);
-        } else {
-            /* query on */
-            $sql = 'SELECT * FROM users WHERE name LIKE :name';
-            $stmt = $pdo->prepare($sql);
-            $name = '%' . $query . '%';
-            $stmt->bindValue(':name', $name, PDO::PARAM_STR);
-        }
-        $stmt->execute();
-        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        if ($page === 0) {
-            $page = 1;
-        }
-        if ($limit === 0) {
-            $limit = 25;
-        }
-        $a = [];
-        $start = 1 + $limit * ($page -1) -1;
-        $end =  $limit * ($page -1) + $limit -1;
-        for ($i = $start; $i <= $end && $i < count($result); $i++) {
-            $a[] = $result[$i];
-        }
-        sendResponse($a);
-
-
-        // TODO: limit page の計算をPHPでがんばる
-    }
-}
-    if //ユーザー削除
-    ($method === 'DELETE') {
-        $id = $router[3];
-        $sql = 'DELETE FROM users WHERE id = :id';
-
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':id', $id, PDO::PARAM_STR);
-
-        $stmt->execute();
-        sendResponse('ID:'. $id . 'を削除しました');
-    }
-
-    //タイムライン
-    if ($router[3] === 'timeline') {
-        $sql = 'SELECT * FROM users';
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        // sendResponse('タイムラインです');
-        sendResponse($stmt->fetchAll(PDO::FETCH_ASSOC));
-    }
-
 
 //新規投稿
-if ($router[2] === 'posts') {
-    if ($method === 'POST') {
-        // token check start ==========================================================
-        $headers = getallheaders();
-        $authorization = $headers['Authorization'];
-        $tokenFromRequest = explode(' ', $authorization)[1]; // d0183...
+if ($router[2] === 'posts' && $method === 'POST') {
+    // 認証
+    tokenCheck($pdo);
 
-        $sql = 'SELECT * FROM users WHERE token = :token';
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':token', $tokenFromRequest, PDO::PARAM_STR);
-        $stmt->execute();
+    // トークンの持ち主を取得する
+    $user = selectUsersByToken($pdo)[0];
 
-        $resultFetchAll = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $isValidToken = (1 === count($resultFetchAll)); // tokenが使われていればtrue
+    // jsonを解凍している
+    $postData = json_decode($json, true);
 
-        if (false === $isValidToken) {
-            /* リクエストされたトークンが使われていない場合 */
-            // TODO:tokenが存在しないときにエラーメッセージを返す
-            sendResponse('トークンが存在しないよ');
-            exit();
-        }
-        /* リクエストされたトークンが有効な場合 */
-        // token check end ============================================================
+    // jsonをデコードした配列からデータを取り出し
+    $message = $postData['post_params']['text'];
+    $user_id = $user['id'];
 
-        $user = $resultFetchAll[0];
+    // SQL操作
+    $sql = 'INSERT INTO posts (message, user_id) VALUES (:message, :user_id)';
 
-        // sendResponse([
-        //     '$user' => $user,
-        //     '$user[\'id\']' => $user['id'],
-        // ]);
+    //準備
+    $stmt = $pdo->prepare($sql);
 
-        // jsonを解凍している
-        $postData = json_decode($json, true);
+    //bindpram
+    $stmt->bindParam(':message', $message, PDO::PARAM_STR);
+    $stmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
 
-        // jsonをデコードした配列からデータを取り出し
-        $message = $postData['post_params']['text'];
-        $user_id = $user['id'];
+    //execute
+    $ret = $stmt->execute();
 
-        // SQL操作
-        $sql = 'INSERT INTO posts (message, user_id) VALUES (:message, :user_id)';
+    // sendResponse([
+    //         'msg' => 'トークンが有効だった',
+    //         'json' => $json,
+    //         'router' => $router,
+    //         'headers' => $headers,
+    //         'message' => $message,
+    //         'ret' => $ret,
+    //     ]);
 
-        //準備
-        $stmt = $pdo->prepare($sql);
-
-        //bindpram
-        $stmt->bindParam(':message', $message, PDO::PARAM_STR);
-        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_STR);
-
+    // 投稿後の処理
+    $selectSql = 'SELECT * FROM posts ORDER BY date DESC LIMIT 1';
+    $prepare = $pdo->prepare($selectSql);
+    $prepare->execute();
+    sendResponse($prepare->fetch(PDO::FETCH_ASSOC));
+}
     
-        //execute
-        $ret = $stmt->execute();
+//投稿一覧
+if ($router[2] === 'posts' && $method === 'GET') {
+    tokenCheck($pdo);
 
-        sendResponse([
-            'msg' => 'トークンが有効だった',
-            'json' => $json,
-            'router' => $router,
-            'headers' => $headers,
-            'message' => $message,
-            'ret' => $ret,
-        ]);
-
-        // 投稿後の処理
-        $selectSql = 'SELECT * FROM posts ORDER BY date DESC LIMIT 1';
-        $prepare = $pdo->prepare($selectSql);
-        $prepare->execute();
-        echo json_encode($prepare->fetch(PDO::FETCH_ASSOC));
-    } //投稿一覧
-    if ($method === 'GET') {
+    if (!isset($query)) {
+        /* query off */
         $sql = 'SELECT * FROM posts';
         $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        sendResponse($stmt->fetchAll(PDO::FETCH_ASSOC));
-    } //投稿削除
-    if ($method === 'DELETE') {
-        $headers = getallheaders();
-        $authorization = $headers['Authorization'];
-        $tokenFromRequest = explode(' ', $authorization)[1]; // d0183...
-
-        $sql = 'SELECT * FROM users WHERE token = :token';
+    } else {
+        /* query on */
+        $sql = 'SELECT * FROM posts WHERE message LIKE :message';
         $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':token', $tokenFromRequest, PDO::PARAM_STR);
-        $stmt->execute();
+        $query = '%' . $query . '%';
+        $stmt->bindValue(':message', $query, PDO::PARAM_STR);
+    }
+    $stmt->execute();
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $resultFetchAll = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $isValidToken = (1 === count($resultFetchAll)); // tokenが使われていればtrue
+    if ($page === 0) {
+        $page = 1;
+    }
+    if ($limit === 0) {
+        $limit = 25;
+    }
+    $a = [];
+    $start = 1 + $limit * ($page -1) -1;
+    $end =  $limit * ($page -1) + $limit -1;
+    for ($i = $start; $i <= $end && $i < count($result); $i++) {
+        $a[] = $result[$i];
+    }
+    sendResponse($a);
+}
 
-        if (false === $isValidToken) {
-            /* リクエストされたトークンが使われていない場合 */
-            // TODO:tokenが存在しないときにエラーメッセージを返す
-            sendResponse('トークンが存在しないよ');
-            exit();
-        }
+//投稿削除
+if ($router[2] === 'posts' && $method === 'DELETE') {
+    // 認証
+    tokenCheck($pdo);
 
-        $id = $router[3];
-        $sql = 'DELETE FROM posts WHERE id = :id';
-        
+    // トークンの持ち主を取得する
+    $user = selectUsersByToken($pdo)[0];
+    
+    $id = $router[3];
+    $sql = 'DELETE FROM posts WHERE id = :id';
+    
 
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':id', $id, PDO::PARAM_STR);
+
+    $stmt->execute();
+    sendResponse('ID:'. $id . 'の投稿を削除しました');
+}
+
+//投稿編集
+if ($router[2] === 'posts' && $method === 'PUT') {
+
+    // 認証
+    tokenCheck($pdo);
+
+    // トークンの持ち主を取得する
+    $user = selectUsersByToken($pdo)[0];
+    $userIdOfToken = $user['id'];
+
+    $postData = json_decode($json, true);
+    $message = $postData['post_params']['text'];
+    $post_id = $router[3];
+
+    $sql = 'SELECT * FROM posts WHERE id = :id';
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':id', $post_id, PDO::PARAM_INT);
+    $stmt->execute();
+    $post = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    $userIdOfPost = $post['user_id'];
+
+    if ($userIdOfToken === $userIdOfPost) {
+        $sql = 'UPDATE posts SET message = :message WHERE id = :id';
         $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':id', $id, PDO::PARAM_STR);
-
-        $stmt->execute();
-        sendResponse('ID:'. $id . 'の投稿を削除しました');
-    } //投稿編集
-    if ($method === 'PUT') {
-        $user = $resultFetchAll[0];
-        $user_id = $user['id'];
-
-        $postData = json_decode($json, true);
-
-        $message = $postData['post_params']['text'];
-            
-        // SQL操作
-        $sql = 'UPDATE SET message = :message WHERE ';
-        
-        //準備
-        $stmt = $pdo->prepare($sql);
-        
-        //bindpram
         $stmt->bindParam(':message', $message, PDO::PARAM_STR);
-            
-        //execute
+        $stmt->bindParam(':id', $post_id, PDO::PARAM_INT);
         $stmt->execute();
-        
-        //未定義
-        $selectSql = 'SELECT FROM posts ORDER BY posts.date DESC LIMIT 1';
-        $prepare = $pdo->prepare($selectSql);
-        $prepare->execute();
-        echo json_encode($prepare->fetch(PDO::FETCH_ASSOC));
+
+        $selectSql = 'SELECT * FROM posts WHERE id = :id';
+        $stmt2 = $pdo->prepare($selectSql);
+        $stmt2->bindParam(':id', $post_id, PDO::PARAM_INT);
+        $stmt2->execute();
+        sendResponse($stmt2->fetch(PDO::FETCH_ASSOC));
+    }
+    if ($userIdOfToken !== $userIdOfPost) {
+        sendResponse('トークンとuserIdの組み合わせが不正です');
     }
 }

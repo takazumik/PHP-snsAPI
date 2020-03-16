@@ -77,7 +77,7 @@ const users = () => {
     fetch(`http://localhost/php_api/users?page=${page}&limit=${limit}&query=${query}`, {
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                "Authorization": `Bearer 493360907edae44f43d97bf3cd2b1adf7f403f5f52b5b7d04401ab3110a95d99`
+                "Authorization": `Bearer ${token}`
 
             },
         })
@@ -103,10 +103,9 @@ const posts = () => {
     const postQuery = document.getElementById("postQuery").value;
     const showPost = document.getElementById("showPost");
 
-    const token = localStorage.getItem('token')
+    // const token = localStorage.getItem('token')
 
-    // fetch(`http://localhost/php_api/posts?posts=${postPage}&limit=${postLimit}&query=${postQuery}`, {
-    fetch(`http://localhost/php_api/posts`, {
+    fetch(`http://localhost/php_api/posts?posts=${postPage}&limit=${postLimit}&query=${postQuery}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
@@ -135,13 +134,9 @@ const userEdit = () => {
         }
     };
 
-
-    console.log("今送ったデータ");
-    console.log(JSON.stringify(userEditData));
-
     const token = localStorage.getItem('token');
 
-    fetch(`http://localhost/php_api/sign_up/users/${userEditId}`, {
+    fetch(`http://localhost/php_api/users/${userEditId}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
@@ -172,7 +167,7 @@ const userDelete = () => {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                // "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer 493360907edae44f43d97bf3cd2b1adf7f403f5f52b5b7d04401ab3110a95d99`
             },
             body: JSON.stringify(userDeleteData), // 本文のデータ型は "Content-Type" ヘッダーと一致する必要があります
         })
@@ -198,7 +193,7 @@ const timeline = () => {
             method: "GET",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                // "Authorization": `Bearer ${token}`
+                "Authorization": `Bearer ${token}`
             },
         })
         .then(response => response.json())
@@ -226,7 +221,7 @@ const newPost = () => {
             method: "POST",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                "Authorization": `Bearer 493360907edae44f43d97bf3cd2b1adf7f403f5f52b5b7d04401ab3110a95d99`
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(newPostData),
         })
@@ -255,7 +250,7 @@ const editPost = () => {
 
     const token = localStorage.getItem('token');
 
-    fetch(`https://localhost/php_api/posts/${postEditId}`, {
+    fetch(`http://localhost/php_api/posts/${postEditId}`, {
             method: "PUT",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
