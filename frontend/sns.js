@@ -85,13 +85,14 @@ const users = () => {
         .then(json => {
             console.log(json);
             // 名前だけ出したい
-            let s = "<br>"
-            for (let i = 0; i < json.length; i++) {
-                const obj = json[i]
-                const objstr = JSON.stringify(obj.name)
-                s += objstr + "<br>"
-            }
-            allusers.innerHTML = s
+            // let s = "<br>"
+            // for (let i = 0; i < json.length; i++) {
+            //     const obj = json[i]
+            //     const objstr = JSON.stringify(obj.name)
+            //     s += objstr + "<br>"
+            // }
+            // allusers.innerHTML = s
+            allusers.innerHTML = JSON.stringify(json)
         })
 }
 

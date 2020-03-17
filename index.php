@@ -123,6 +123,9 @@ if ($router[2] === 'sign_up') {
     $password = $signupData['sign_up_user_params']['password'];
     $password_confirmation = $signupData['sign_up_user_params']['password_confirmation'];
 
+    $hashPassword = password_hash($password, PASSWORD_DEFAULT);
+    $hashPassword_confirmation = password_hash($password_confirmation, PASSWORD_DEFAULT);
+
     emptyCheck($json);
     passCheck($json);
 
@@ -144,8 +147,8 @@ if ($router[2] === 'sign_up') {
     }
 
     // SQL操作
-    $sql = "INSERT INTO users (name, bio, email, password, token)";
-    $sql .= " VALUES (:name, :bio, :email, :password, :token)";
+    $sql = "INSERT INTO users (name, bio, email, password, Password_confirmation, token)";
+    $sql .= " VALUES (:name, :bio, :email, :password, :Password_confirmation, :token)";
     
     //準備
     $stmt = $pdo->prepare($sql);
@@ -155,7 +158,8 @@ if ($router[2] === 'sign_up') {
     $stmt->bindParam(':name', $name, PDO::PARAM_STR);
     $stmt->bindParam(':bio', $bio, PDO::PARAM_STR);
     $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-    $stmt->bindParam(':password', $password, PDO::PARAM_STR);
+    $stmt->bindParam(':password', $hashPassword, PDO::PARAM_STR);
+    $stmt->bindParam(':Password_confirmation', $hashPassword_confirmation, PDO::PARAM_STR);
     $stmt->bindParam(':token', $token, PDO::PARAM_STR);
 
     
@@ -189,17 +193,13 @@ if ($router[2] === 'sign_in') {
         sendResponse('確認パスワードと一致しません！！');
     }
 
-    $sql = 'SELECT * FROM users WHERE email = :email AND password = :password';
-
+    $sql = 'SELECT * FROM users WHERE email = :email';
     $stmt = $pdo->prepare($sql);
-    
     $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-    $stmt->bindParam(':password', $password, PDO::PARAM_STR);
-
     $stmt->execute();
     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if (0 === count($result)) {
+    if (!password_verify($password, $result[0]['password'])) {
         sendResponse('ログインに失敗！ざまあ！！！');
     }
 
@@ -229,7 +229,6 @@ if ($router[2] === 'users' && $method === 'GET') {
         $stmt->bindValue(':name', $name, PDO::PARAM_STR);
     }
     $stmt->execute();
-
     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
     if ($page === 0) {
@@ -244,6 +243,7 @@ if ($router[2] === 'users' && $method === 'GET') {
     for ($i = $start; $i <= $end && $i < count($result); $i++) {
         $a[] = $result[$i];
     }
+    
     sendResponse($a);
 }
 
