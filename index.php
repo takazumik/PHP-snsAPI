@@ -124,7 +124,6 @@ if ($router[2] === 'sign_up') {
     $password_confirmation = $signupData['sign_up_user_params']['password_confirmation'];
 
     $hashPassword = password_hash($password, PASSWORD_DEFAULT);
-    $hashPassword_confirmation = password_hash($password_confirmation, PASSWORD_DEFAULT);
 
     emptyCheck($json);
     passCheck($json);
@@ -147,8 +146,8 @@ if ($router[2] === 'sign_up') {
     }
 
     // SQL操作
-    $sql = "INSERT INTO users (name, bio, email, password, Password_confirmation, token)";
-    $sql .= " VALUES (:name, :bio, :email, :password, :Password_confirmation, :token)";
+    $sql = "INSERT INTO users (name, bio, email, password, token)";
+    $sql .= " VALUES (:name, :bio, :email, :password, :token)";
     
     //準備
     $stmt = $pdo->prepare($sql);
@@ -159,7 +158,6 @@ if ($router[2] === 'sign_up') {
     $stmt->bindParam(':bio', $bio, PDO::PARAM_STR);
     $stmt->bindParam(':email', $email, PDO::PARAM_STR);
     $stmt->bindParam(':password', $hashPassword, PDO::PARAM_STR);
-    $stmt->bindParam(':Password_confirmation', $hashPassword_confirmation, PDO::PARAM_STR);
     $stmt->bindParam(':token', $token, PDO::PARAM_STR);
 
     
@@ -241,6 +239,9 @@ if ($router[2] === 'users' && $method === 'GET') {
     $start = 1 + $limit * ($page -1) -1;
     $end =  $limit * ($page -1) + $limit -1;
     for ($i = $start; $i <= $end && $i < count($result); $i++) {
+        unset($result[$i]['password']);
+        unset($result[$i]['token']);
+
         $a[] = $result[$i];
     }
     
@@ -392,6 +393,8 @@ if ($router[2] === 'posts' && $method === 'GET') {
     $start = 1 + $limit * ($page -1) -1;
     $end =  $limit * ($page -1) + $limit -1;
     for ($i = $start; $i <= $end && $i < count($result); $i++) {
+        unset($result[$i]['password']);
+        unset($result[$i]['token']);
         $a[] = $result[$i];
     }
     sendResponse($a);
