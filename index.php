@@ -28,6 +28,9 @@ $QueryParam = explode("&", $urlQueryParam);
 $minimumID01 = explode("=", $QueryParam[0]);
 $minimumID02 = explode("=", $QueryParam[1]);
 $minimumID03 = explode("=", $QueryParam[2]);
+$minimumID04 = explode("=", $QueryParam[3]);
+
+
 $page = intval($minimumID01[1]);
 $limit = intval($minimumID02[1]);
 $query = $minimumID03[1];
@@ -281,11 +284,48 @@ if ($router[2] === 'users' && $method === 'PUT') {
 
 //タイムライン
 if ($router[3] === 'timeline') {
-    $sql = 'SELECT * FROM users';
-    $stmt = $pdo->prepare($sql);
+    tokenCheck($pdo);
+    $timelineId = intval($router[2]);
+
+    if (empty($timelineId) || $timelineId === 0) {
+        sendResponse('IDを指定しろ！');
+    } else {
+        $sql = 'SELECT * FROM posts WHERE user_id = :id';
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindparam(':id', $timelineId, PDO::PARAM_STR);
+    }
     $stmt->execute();
-    // sendResponse('タイムラインです');
-    sendResponse($stmt->fetchAll(PDO::FETCH_ASSOC));
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (!isset($query)) {
+        $sql = 'SELECT * FROM posts';
+        $stmt = $pdo->prepare($sql);
+    } else {
+        $sql = 'SELECT * FROM posts WHERE message LIKE :message';
+        $stmt = $pdo->prepare($sql);
+        $query = '%' . $query . '%';
+        $stmt->bindValue(':message', $query, PDO::PARAM_STR);
+    }
+
+    $stmt->execute();
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+    if ($page === 0) {
+        $page = 1;
+    }
+    if ($limit === 0) {
+        $limit = 25;
+    }
+
+    $a = [];
+    $start = 1 + $limit * ($page -1) -1;
+    $end =  $limit * ($page -1) + $limit -1;
+    for ($i = $start; $i <= $end && $i < count($result); $i++) {
+        $a[] = $result[$i];
+    }
+
+    sendResponse($a);
 }
 
 
