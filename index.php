@@ -55,7 +55,6 @@ function selectUsersByToken($pdo)
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// token check end
 // okだったら何もしない。ngだったらエラーを返却してexit
 function tokenCheck($pdo)
 {
@@ -80,8 +79,37 @@ function tokenAndIdCheck($pdo, $userId)
     }
 }
 
+//空かどうかチェックする
+function emptyCheck($json)
+{
+    $signupData = json_decode($json, true);
+
+    // jsonをデコードした配列からデータを取り出し
+    $name = $signupData['sign_up_user_params']['name'];
+    $bio = $signupData['sign_up_user_params']['bio'];
+    $email = $signupData['sign_up_user_params']['email'];
+    $password = $signupData['sign_up_user_params']['password'];
+
+    if (empty($name) || empty($bio) || empty($email) || empty($password)) {
+        sendResponse('項目を入力して！！');
+    }
+}
+
+//パスが確認用と合ってるかチェックする
+function passCheck($json)
+{
+    $signupData = json_decode($json, true);
+    $password = $signupData['sign_up_user_params']['password'];
+    $password_confirmation = $signupData['sign_up_user_params']['password_confirmation'];
+
+    if ($password !== $password_confirmation) {
+        sendResponse('確認パスワードと一致しません！！');
+    }
+}
+
 //新規登録
 if ($router[2] === 'sign_up') {
+
     // jsonを解凍している
     $signupData = json_decode($json, true);
 
@@ -90,10 +118,27 @@ if ($router[2] === 'sign_up') {
     $bio = $signupData['sign_up_user_params']['bio'];
     $email = $signupData['sign_up_user_params']['email'];
     $password = $signupData['sign_up_user_params']['password'];
-    
+    $password_confirmation = $signupData['sign_up_user_params']['password_confirmation'];
+
+    emptyCheck($json);
+    passCheck($json);
+
     $secret = 'takazumi';
-    $seed = $name . $password . $secret;
+    $seed = $email . $password . $secret;
     $token = hash('sha256', $seed);
+
+
+    //メアド重複チェック
+    $checkSql = 'SELECT * FROM users WHERE email = :email';
+    $stmt3 = $pdo->prepare($checkSql);
+    $stmt3->bindParam(':email', $email, PDO::PARAM_STR);
+    $stmt3->execute();
+    $result = $stmt3->fetchAll(PDO::FETCH_ASSOC);
+
+    if (0 !== count($result)) {
+        sendResponse('アドレスが重複してる！！');
+        exit();
+    }
 
     // SQL操作
     $sql = "INSERT INTO users (name, bio, email, password, token)";
@@ -131,8 +176,16 @@ if ($router[2] === 'sign_in') {
 
     $email = $signupData['sign_in_user_params']['email'];
     $password = $signupData['sign_in_user_params']['password'];
-
+    $password_confirmation = $signupData['sign_in_user_params']['password_confirmation'];
     
+    if (empty($email) || empty($password) || empty($password_confirmation)) {
+        sendResponse('項目を入力して！！');
+    }
+
+    if ($password !== $password_confirmation) {
+        sendResponse('確認パスワードと一致しません！！');
+    }
+
     $sql = 'SELECT * FROM users WHERE email = :email AND password = :password';
 
     $stmt = $pdo->prepare($sql);
@@ -141,6 +194,12 @@ if ($router[2] === 'sign_in') {
     $stmt->bindParam(':password', $password, PDO::PARAM_STR);
 
     $stmt->execute();
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (0 === count($result)) {
+        sendResponse('ログインに失敗！ざまあ！！！');
+    }
+
     // 値を返す
     $sql = 'SELECT * FROM users WHERE email = :email';
     $stmt = $pdo->prepare($sql);
@@ -258,15 +317,6 @@ if ($router[2] === 'posts' && $method === 'POST') {
     //execute
     $ret = $stmt->execute();
 
-    // sendResponse([
-    //         'msg' => 'トークンが有効だった',
-    //         'json' => $json,
-    //         'router' => $router,
-    //         'headers' => $headers,
-    //         'message' => $message,
-    //         'ret' => $ret,
-    //     ]);
-
     // 投稿後の処理
     $selectSql = 'SELECT * FROM posts ORDER BY date DESC LIMIT 1';
     $prepare = $pdo->prepare($selectSql);
@@ -314,7 +364,7 @@ if ($router[2] === 'posts' && $method === 'DELETE') {
 
     // トークンの持ち主を取得する
     $user = selectUsersByToken($pdo)[0];
-    
+
     $id = $router[3];
     $sql = 'DELETE FROM posts WHERE id = :id';
     
