@@ -103,7 +103,7 @@ const posts = () => {
     const postQuery = document.getElementById("postQuery").value;
     const showPost = document.getElementById("showPost");
 
-    // const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token')
 
     fetch(`http://localhost/php_api/posts?posts=${postPage}&limit=${postLimit}&query=${postQuery}`, {
             method: "GET",
