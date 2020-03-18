@@ -407,14 +407,26 @@ if ($router[2] === 'posts' && $method === 'DELETE') {
 
     // トークンの持ち主を取得する
     $user = selectUsersByToken($pdo)[0];
+    $userIdOfToken = $user['id'];
 
+    //ログインユーザーのトークン・IDと、入力IDのチェック
     $id = $router[3];
+    $sql = 'SELECT * FROM posts WHERE id = :id';
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    $post = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    $userIdOfPost = $post['user_id'];
+
+    if ($userIdOfToken !== $userIdOfPost) {
+        sendResponse('トークンとuserIdの組み合わせが不正です');
+    }
+
     $sql = 'DELETE FROM posts WHERE id = :id';
     
-
     $stmt = $pdo->prepare($sql);
     $stmt->bindParam(':id', $id, PDO::PARAM_STR);
-
     $stmt->execute();
     sendResponse('ID:'. $id . 'の投稿を削除しました');
 }
@@ -429,6 +441,10 @@ if ($router[2] === 'posts' && $method === 'PUT') {
     $user = selectUsersByToken($pdo)[0];
     $userIdOfToken = $user['id'];
 
+    if ($userIdOfToken !== $post_id) {
+        sendResponse('トークンとuserIdの組み合わせが不正です');
+    }
+
     $postData = json_decode($json, true);
     $message = $postData['post_params']['text'];
     $post_id = $router[3];
@@ -438,7 +454,6 @@ if ($router[2] === 'posts' && $method === 'PUT') {
     $stmt->bindParam(':id', $post_id, PDO::PARAM_INT);
     $stmt->execute();
     $post = $stmt->fetch(PDO::FETCH_ASSOC);
-    
     $userIdOfPost = $post['user_id'];
 
     if ($userIdOfToken === $userIdOfPost) {
