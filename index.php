@@ -1,5 +1,8 @@
 <?php
 
+// ini_set('display_errors', 1);
+// ini_set('error_reporting', E_ALL);
+
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: *');
 header('Access-Control-Allow-Methods: *');
@@ -24,11 +27,11 @@ $urlWithoutQueryParam = explode('?', $url)[0];
 $router = explode("/", $urlWithoutQueryParam);
 
 $urlQueryParam = explode('?', $url)[1];
-$QueryParam = explode("&", $urlQueryParam);
-$minimumID01 = explode("=", $QueryParam[0]);
-$minimumID02 = explode("=", $QueryParam[1]);
-$minimumID03 = explode("=", $QueryParam[2]);
-$minimumID04 = explode("=", $QueryParam[3]);
+$queryParam = explode("&", $urlQueryParam);
+$minimumID01 = explode("=", $queryParam[0]);
+$minimumID02 = explode("=", $queryParam[1]);
+$minimumID03 = explode("=", $queryParam[2]);
+$minimumID04 = explode("=", $queryParam[3]);
 
 
 $page = intval($minimumID01[1]);
@@ -169,10 +172,10 @@ if ($router[2] === 'sign_up') {
     $prepare = $pdo->prepare($selectSql);
     $prepare->bindParam(':email', $email, PDO::PARAM_STR);
 
-    $prepare->execute();
-
-    echo json_encode($prepare->fetch(PDO::FETCH_ASSOC));
-    return;
+    $result = $prepare->execute();
+    sendResponse($result);
+    // echo json_encode($prepare->fetch(PDO::FETCH_ASSOC));
+    // return;
 }
 
 //ログイン
