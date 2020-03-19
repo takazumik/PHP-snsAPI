@@ -287,32 +287,28 @@ if ($router[2] === 'users' && $method === 'PUT') {
 
 //タイムライン
 if ($router[3] === 'timeline') {
-    tokenCheck($pdo);
     $timelineId = intval($router[2]);
 
     if (empty($timelineId) || $timelineId === 0) {
         sendResponse('IDを指定しろ！');
-    } else {
-        $sql = 'SELECT * FROM posts WHERE user_id = :id';
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindparam(':id', $timelineId, PDO::PARAM_STR);
     }
-    $stmt->execute();
-    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    tokenCheck($pdo);
 
     if (!isset($query)) {
-        $sql = 'SELECT * FROM posts';
+        $sql = 'SELECT * FROM posts WHERE user_id = :id';
         $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':id', $timelineId, PDO::PARAM_STR);
     } else {
-        $sql = 'SELECT * FROM posts WHERE message LIKE :message';
+        /* query on */
+        $sql = 'SELECT * FROM posts WHERE message LIKE :message AND user_id = :id';
         $stmt = $pdo->prepare($sql);
         $query = '%' . $query . '%';
         $stmt->bindValue(':message', $query, PDO::PARAM_STR);
+        $stmt->bindParam(':id', $timelineId, PDO::PARAM_STR);
     }
-
     $stmt->execute();
     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 
     if ($page === 0) {
         $page = 1;
@@ -320,14 +316,14 @@ if ($router[3] === 'timeline') {
     if ($limit === 0) {
         $limit = 25;
     }
-
     $a = [];
     $start = 1 + $limit * ($page -1) -1;
     $end =  $limit * ($page -1) + $limit -1;
     for ($i = $start; $i <= $end && $i < count($result); $i++) {
+        unset($result[$i]['password']);
+        unset($result[$i]['token']);
         $a[] = $result[$i];
     }
-
     sendResponse($a);
 }
 
@@ -437,7 +433,7 @@ if ($router[2] === 'posts' && $method === 'DELETE') {
 if ($router[2] === 'posts' && $method === 'PUT') {
 
     // 認証
-    tokenCheck($pdo);
+    tokenAndIdCheck($pdo, );
 
     // トークンの持ち主を取得する
     $user = selectUsersByToken($pdo)[0];
