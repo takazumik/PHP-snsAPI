@@ -67,7 +67,6 @@ function tokenCheck($pdo)
     $usersByToken = selectUsersByToken($pdo);
     if (0 === count($usersByToken)) {
         /* リクエストされたトークンが使われていない場合 */
-        // TODO:tokenが存在しないときにエラーメッセージを返す
         sendResponse('トークンが存在しないよ');
         exit();
     }
@@ -80,7 +79,7 @@ function tokenAndIdCheck($pdo, $userId)
         sendResponse('トークンが存在しないよ');
     }
     $user = $usersByToken[0];
-    if ($userId !== $user['id']) {
+    if (intval($userId) !== intval($user['id'])) {
         sendResponse('トークンとuserIdの組み合わせが不正です');
     }
 }
@@ -172,7 +171,9 @@ if ($router[2] === 'sign_up') {
     $prepare = $pdo->prepare($selectSql);
     $prepare->bindParam(':email', $email, PDO::PARAM_STR);
 
-    $result = $prepare->execute();
+    $prepare->execute();
+    $result = $prepare->fetch(PDO::FETCH_ASSOC);
+
     sendResponse($result);
     // echo json_encode($prepare->fetch(PDO::FETCH_ASSOC));
     // return;
@@ -254,6 +255,7 @@ if ($router[2] === 'users' && $method === 'GET') {
 //ユーザー削除
 if ($router[2] === 'users' && $method === 'DELETE') {
     $id = $router[3];
+    tokenAndIdCheck($pdo, $id);
     $sql = 'DELETE FROM users WHERE id = :id';
 
     $stmt = $pdo->prepare($sql);
@@ -271,9 +273,6 @@ if ($router[2] === 'users' && $method === 'PUT') {
     $id = $router[3];
 
     tokenAndIdCheck($pdo, $id);
-
-    $user = $resultFetchAll[0];
-    $user_id = $user['id'];
 
     $sql = 'UPDATE users SET name = :name, bio = :bio WHERE id = :id';
 
@@ -443,10 +442,6 @@ if ($router[2] === 'posts' && $method === 'PUT') {
     // トークンの持ち主を取得する
     $user = selectUsersByToken($pdo)[0];
     $userIdOfToken = $user['id'];
-
-    if ($userIdOfToken !== $post_id) {
-        sendResponse('トークンとuserIdの組み合わせが不正です');
-    }
 
     $postData = json_decode($json, true);
     $message = $postData['post_params']['text'];

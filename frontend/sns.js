@@ -168,7 +168,7 @@ const userDelete = () => {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json; charset=utf-8",
-                "Authorization": `Bearer 493360907edae44f43d97bf3cd2b1adf7f403f5f52b5b7d04401ab3110a95d99`
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(userDeleteData), // 本文のデータ型は "Content-Type" ヘッダーと一致する必要があります
         })
@@ -245,9 +245,6 @@ const editPost = () => {
             text: editText
         }
     };
-
-    console.log("今送ったデータ")
-    console.log(JSON.stringify(editPostData))
 
     const token = localStorage.getItem('token');
 
