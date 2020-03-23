@@ -433,7 +433,7 @@ if ($router[2] === 'posts' && $method === 'DELETE') {
 if ($router[2] === 'posts' && $method === 'PUT') {
 
     // 認証
-    tokenAndIdCheck($pdo, );
+    tokenCheck($pdo);
 
     // トークンの持ち主を取得する
     $user = selectUsersByToken($pdo)[0];
