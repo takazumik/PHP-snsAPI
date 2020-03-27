@@ -144,7 +144,6 @@ if ($router[2] === 'sign_up') {
 
     if (0 !== count($result)) {
         sendResponse('アドレスが重複してる！！');
-        exit();
     }
 
     // SQL操作
@@ -221,11 +220,11 @@ if ($router[2] === 'users' && $method === 'GET') {
 
     if (!isset($query)) {
         /* query off */
-        $sql = 'SELECT * FROM users';
+        $sql = 'SELECT id,name,created_at,updated_at FROM users';
         $stmt = $pdo->prepare($sql);
     } else {
         /* query on */
-        $sql = 'SELECT * FROM users WHERE name LIKE :name';
+        $sql = 'SELECT id,name,created_at,updated_at FROM users WHERE name LIKE :name';
         $stmt = $pdo->prepare($sql);
         $name = '%' . $query . '%';
         $stmt->bindValue(':name', $name, PDO::PARAM_STR);
@@ -239,17 +238,14 @@ if ($router[2] === 'users' && $method === 'GET') {
     if ($limit === 0) {
         $limit = 25;
     }
-    $a = [];
+    $userResults = [];
     $start = 1 + $limit * ($page -1) -1;
     $end =  $limit * ($page -1) + $limit -1;
     for ($i = $start; $i <= $end && $i < count($result); $i++) {
-        unset($result[$i]['password']);
-        unset($result[$i]['token']);
-
-        $a[] = $result[$i];
+        $userResults[] = $result[$i];
     }
     
-    sendResponse($a);
+    sendResponse($userResults);
 }
 
 //ユーザー削除
@@ -316,15 +312,13 @@ if ($router[3] === 'timeline') {
     if ($limit === 0) {
         $limit = 25;
     }
-    $a = [];
+    $timelineResults = [];
     $start = 1 + $limit * ($page -1) -1;
     $end =  $limit * ($page -1) + $limit -1;
     for ($i = $start; $i <= $end && $i < count($result); $i++) {
-        unset($result[$i]['password']);
-        unset($result[$i]['token']);
-        $a[] = $result[$i];
+        $timelineResults[] = $result[$i];
     }
-    sendResponse($a);
+    sendResponse($timelineResults);
 }
 
 
